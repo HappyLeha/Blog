@@ -23,6 +23,7 @@ public class User {
     @Setter
     @Column(name = "last_name")
     private String lastName;
+    @ToString.Exclude
     @Setter
     @Column(name = "password")
     private String password;
@@ -32,11 +33,15 @@ public class User {
     @Column(name = "created_at")
     private Date createdAt;
     @Setter
-    @Column(name = "code")
-    private int code;
-    @Setter
     @Column(name = "enabled")
     private boolean enabled;
+    @ToString.Exclude
+    @OneToOne(mappedBy = "user")
+    private VerificationToken token;
+    @Setter
+    @ToString.Exclude
+    @OneToOne(mappedBy = "user")
+    private ResetCode code;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @ToString.Exclude
     private List<Article> articles;

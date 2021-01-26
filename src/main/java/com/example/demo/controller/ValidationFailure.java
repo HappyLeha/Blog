@@ -14,7 +14,7 @@ public class ValidationFailure {
     @ResponseBody
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    String resourceAlreadyCreateHandler (MethodArgumentNotValidException ex) {
+    String validationFailureHandler (MethodArgumentNotValidException ex) {
         String resultMessage="";
         for (ObjectError error: ex.getAllErrors()) {
             resultMessage+=error.getDefaultMessage()+"\n";
