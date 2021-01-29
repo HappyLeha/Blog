@@ -1,34 +1,31 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.EmailDTO;
-import com.example.demo.dto.NewPasswordDTO;
-import com.example.demo.dto.UserDTO;
+import com.example.demo.dto.*;
 import com.example.demo.entity.User;
 import com.example.demo.service.UserService;
+import com.example.demo.util.JwtProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
-import javax.mail.MessagingException;
 import javax.validation.Valid;
 
 @RestController
 @RequestMapping("auth")
-public class UserController {
+public class AuthController {
     UserService userService;
-
     @Autowired
-    public UserController(UserService userService) {
+    private JwtProvider jwtProvider;
+    @Autowired
+    public AuthController(UserService userService) {
         this.userService=userService;
     }
 
-    @PostMapping
+    @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public void createUser(@RequestBody @Valid UserDTO userDTO) {
         userService.createUser(new User(userDTO.getFirstName(),
-                userDTO.getLastName(),userDTO.getPassword(),
+                userDTO.getLastName(), userDTO.getPassword(),
                 userDTO.getEmail()));
     }
 
@@ -45,8 +42,16 @@ public class UserController {
     }
 
     @PostMapping("/reset")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.OK)
     public void createCode(@RequestBody @Valid NewPasswordDTO newPasswordDTO) {
         userService.confirmCode(newPasswordDTO);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.OK)
+    public AuthResponse auth(@RequestBody @Valid AuthRequest request) {
+        User user = userService.getByEmailAndPassword(request.getLogin(), request.getPassword());
+        String token = jwtProvider.generateToken(user.getEmail());
+        return new AuthResponse(token);
     }
 }

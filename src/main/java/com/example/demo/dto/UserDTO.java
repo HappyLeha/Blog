@@ -17,7 +17,6 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserDTO {
-    //@Null(message = "this field should be empty")
     private int id;
     @NotBlank(message = "firstName shouldn't be empty")
     @Pattern(regexp = "[a-zA-Zа-яА-Я]+",
@@ -32,10 +31,5 @@ public class UserDTO {
     @NotBlank(message = "email shouldn't be empty")
     @Email(message = "field email should be email")
     private String email;
-    //@Null(message = "this field should be empty")
     private Date createdAt;
-    //@Null(message = "this field should be empty")
-    private int code;
-    //@Null(message = "this field should be empty")
-    private boolean enabled;
 }

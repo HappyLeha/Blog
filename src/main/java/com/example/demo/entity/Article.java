@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.example.demo.enumeration.Status;
 import lombok.*;
 
 import javax.persistence.*;

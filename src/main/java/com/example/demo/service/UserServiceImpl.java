@@ -1,9 +1,11 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.NewPasswordDTO;
+import com.example.demo.dto.UserDTO;
 import com.example.demo.entity.ResetCode;
 import com.example.demo.entity.User;
 import com.example.demo.entity.VerificationToken;
+import com.example.demo.exception.InvalidPasswordException;
 import com.example.demo.exception.ResourceAlreadyExistException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.exception.UnknownServerException;
@@ -27,17 +29,15 @@ import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.transaction.Transactional;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Optional;
-import java.util.Properties;
+import java.security.Principal;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Service
 @Transactional
 @Slf4j
-public class UserServiceImpl implements UserService, UserDetailsService {
+public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
     private final CodeRepository codeRepository;
@@ -70,21 +70,22 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
-    @PostConstruct
-    public void init() {
-        tokenRepository.deleteAllByExpiryDateIsLessThanEqual(new Date());
-        codeRepository.deleteAllByExpiryDateIsLessThanEqual(new Date());
-    }
-
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return null;
+    public UserDetails loadUserByUsername(String username)  {
+        if (userRepository.existsByEmailAndEnabled(username,true)) {
+            return userRepository.findByEmail(username);
+        }
+        else {
+            log.info("User with email " + username + " doesn't exist.");
+            throw new ResourceNotFoundException("User with this email doesn't exist.");
+        }
     }
 
     @Override
     public void createUser(User user)  {
         VerificationToken token;
 
+        deleteExpiryTokensAndCodes();
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new ResourceAlreadyExistException();
         }
@@ -94,7 +95,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         tokenRepository.save(token);
         confirmMessage += token.getToken();
         sendEmail(confirmSubject, confirmMessage, user.getEmail());
-        //deleteToken(token);
+        //deleteExpiryTokensAndCodesAsync(Calendar.DAY_OF_MONTH, 1);
         log.info("User "+user+" was created.");
     }
 
@@ -103,6 +104,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         Optional<VerificationToken> optionalToken =
                 tokenRepository.findFirstByToken(token);
 
+        deleteExpiryTokensAndCodes();
         if (optionalToken.isPresent()) {
             VerificationToken verificationToken = optionalToken.get();
 
@@ -120,27 +122,32 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     public void createCode(String email) {
         User user;
+        ResetCode code;
 
+        deleteExpiryTokensAndCodes();
         if (!userRepository.existsByEmailAndEnabled(email,true)) {
             log.info("User with email "+email+" doesn't exist.");
             throw new ResourceNotFoundException(
                     "User with this email doesn't exist.");
         }
         user = userRepository.findByEmail(email);
-        if (user.getCode()==null) {
-            ResetCode code = new ResetCode(user);
+        code = user.getCode();
+        if (code == null || !codeRepository.existsByCode(code.getCode())) {
+            code = new ResetCode(user);
             codeRepository.save(code);
             user.setCode(code);
+            System.out.println("1");
         }
         codeMessage+=" "+user.getCode().getCode();
         sendEmail(codeSubject, codeMessage, email);
-        //deleteCode(user.getCode());
+        //deleteExpiryTokensAndCodesAsync(Calendar.MINUTE, 15);
         log.info("Code "+user.getCode()+" was created.");
     }
 
     public void confirmCode(NewPasswordDTO newPasswordDTO) {
         ResetCode code;
 
+        deleteExpiryTokensAndCodes();
         if (!codeRepository.existsByCode(newPasswordDTO.getCode())) {
             log.info("Code "+newPasswordDTO.getCode()+" is wrong.");
             throw new ResourceNotFoundException("This code is wrong");
@@ -153,9 +160,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         log.info("Password for user "+code.getUser()+" has been successed changed.");
     }
 
-    @Async
-    public void deleteExpiryTokensAndCodes(int measure, int value) {
-        Runnable runnable = this::init;
+    /*@Async
+    @Transactional
+    public void deleteExpiryTokensAndCodesAsync(int measure, int value) {
+        Runnable runnable = this::deleteExpiryTokensAndCodes;
         ScheduledExecutorService localExecutor = Executors.
                 newSingleThreadScheduledExecutor();
         TaskScheduler scheduler = new ConcurrentTaskScheduler(localExecutor);
@@ -165,6 +173,61 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         calendar.add(measure, value);
         date = calendar.getTime();
         scheduler.schedule(runnable, date);
+    }*/
+
+    public void deleteExpiryTokensAndCodes() {
+        List<VerificationToken> tokens = tokenRepository.
+                findAllByExpiryDateLessThan(new Date());
+        List<User> users = new ArrayList<>();
+
+        tokens.forEach(i->users.add(i.getUser()));
+        tokenRepository.removeByExpiryDateLessThan(new Date());
+        userRepository.deleteAll(users);
+        codeRepository.removeByExpiryDateLessThan(new Date());
+    }
+
+    public User getByEmailAndPassword(String email, String password) {
+        if (!userRepository.existsByEmailAndEnabled(email, true)) {
+            log.info("User with email " + email + " doesn't exist.");
+            throw new ResourceNotFoundException("User with this email doesn't exist.");
+        }
+        User user = userRepository.findByEmail(email);
+        if (bCryptPasswordEncoder.matches(password, user.getPassword())) {
+            return user;
+        }
+        else {
+            log.info("This password is wrong");
+            throw new InvalidPasswordException();
+        }
+    }
+
+    @Override
+    public User getProfile(Principal principal) {
+        return userRepository.findByEmail(principal.getName());
+    }
+
+    @Override
+    public void updateProfile(Principal principal, UserDTO userDTO) {
+        User user = userRepository.findByEmail(principal.getName());
+
+        if (!user.getEmail().equals(userDTO.getEmail())&&
+                userRepository.existsByEmail(userDTO.getEmail())) {
+            throw new ResourceAlreadyExistException();
+        }
+        user.setFirstName(userDTO.getFirstName());
+        user.setLastName(userDTO.getLastName());
+        user.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
+        user.setEmail(userDTO.getEmail());
+        userRepository.save(user);
+        log.info("User "+user+" was updated.");
+    }
+
+    public void deleteProfile(Principal principal) {
+        User user = userRepository.findByEmail(principal.getName());
+
+        codeRepository.delete(user.getCode());
+        userRepository.delete(user);
+        log.info("User "+user+" was deleted.");
     }
 /*
     @Async
