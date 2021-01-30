@@ -225,7 +225,9 @@ public class UserServiceImpl implements UserService {
     public void deleteProfile(Principal principal) {
         User user = userRepository.findByEmail(principal.getName());
 
-        codeRepository.delete(user.getCode());
+        if (user.getCode() != null) {
+            codeRepository.delete(user.getCode());
+        }
         userRepository.delete(user);
         log.info("User "+user+" was deleted.");
     }

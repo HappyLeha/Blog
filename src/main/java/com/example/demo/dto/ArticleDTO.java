@@ -21,8 +21,7 @@ public class ArticleDTO {
     @NotBlank(message = "status shouldn't be empty")
     @Pattern(regexp = "^PUBLIC$|^DRAFT$",
             message = "status should be PUBLIC OR DRAFT")
-    private Status status;
-    @NotBlank(message = "status shouldn't be empty")
+    private String status;
     private int authorId;
     private Date createdAt;
     private Date updatedAt;

@@ -29,6 +29,7 @@ public class Article {
     private Status status;
     @Column(name = "created_at")
     private Date createdAt;
+    @Setter
     @Column(name = "updated_at")
     private Date updatedAt;
     @ManyToOne
