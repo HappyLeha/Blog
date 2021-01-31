@@ -30,20 +30,12 @@ public class Comment {
     @JoinColumn(name = "author_id")
     @Setter
     private User user;
-    @ManyToMany
-    @JoinTable(
-            name = "comment_tag",
-            joinColumns = @JoinColumn(name = "comment_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private List<Tag> tags;
 
-    public Comment(String message, Article article, User user,
-                   List<Tag> tags) {
+
+    public Comment(String message, Article article, User user) {
         this.message = message;
         this.article = article;
         this.user = user;
-        this.tags = tags;
         this.createdAt = new Date();
     }
 }

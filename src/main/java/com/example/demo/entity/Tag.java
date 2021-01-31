@@ -3,6 +3,7 @@ package com.example.demo.entity;
 import lombok.*;
 
 import javax.persistence.*;
+import java.util.List;
 
 @EqualsAndHashCode
 @ToString
@@ -18,6 +19,8 @@ public class Tag {
     @Setter
     @Column(name = "name")
     private String name;
+    @ManyToMany
+    private List<Article> articles;
 
     public Tag(String name) {
         this.name = name;

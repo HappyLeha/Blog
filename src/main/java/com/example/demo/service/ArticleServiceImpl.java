@@ -7,9 +7,11 @@ import com.example.demo.enumeration.Status;
 import com.example.demo.exception.NotEnoughRightException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.ArticleRepository;
+import com.example.demo.repository.TagRepository;
 import com.example.demo.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -22,13 +24,14 @@ import java.util.List;
 @Slf4j
 public class ArticleServiceImpl implements ArticleService {
     private ArticleRepository articleRepository;
+    private TagRepository tagRepository;
     //private UserRepository userRepository;
 
     @Autowired
-    public ArticleServiceImpl(ArticleRepository articleRepository/*,
-                              UserRepository userRepository*/) {
+    public ArticleServiceImpl(ArticleRepository articleRepository,
+                              TagRepository tagRepository) {
         this.articleRepository = articleRepository;
-        //this.userRepository = userRepository;
+        this.tagRepository = tagRepository;
     }
 
     @Override
@@ -69,6 +72,7 @@ public class ArticleServiceImpl implements ArticleService {
         log.info("Article "+article+" has been updated");
     }
 
+    @Override
     public void deleteArticle(int id, User user) {
         Article article;
 
@@ -83,5 +87,17 @@ public class ArticleServiceImpl implements ArticleService {
         }
         articleRepository.delete(article);
         log.info("Article "+article+" has been deleted");
+    }
+
+    @Override
+    public List<Article> getArticles(String title, User user, Pageable pageable) {
+        return articleRepository.findAllByTitleAndUser(title, user, pageable);
+    }
+
+    @Override
+    public List<Article> getPublicArticles(String title, User user,
+                                           Pageable pageable) {
+        return articleRepository.findAllByTitleAndUserAndStatus(title, user,
+                Status.PUBLIC, pageable);
     }
 }

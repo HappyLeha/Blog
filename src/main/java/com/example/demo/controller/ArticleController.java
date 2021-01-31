@@ -9,6 +9,7 @@ import com.example.demo.service.ArticleService;
 import com.example.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -29,6 +30,7 @@ public class ArticleController {
     }
 
     @PostMapping("/articles")
+    @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.CREATED)
     public void createArticle(@RequestBody @Valid ArticleDTO articleDTO,
                               Principal principal) {
@@ -69,5 +71,17 @@ public class ArticleController {
         User user = userService.getProfile(principal);
 
         articleService.deleteArticle(id, user);
+    }
+
+    @GetMapping("/articles")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ArticleDTO> getArticles(Principal principal, @RequestParam int skip,
+                                        @RequestParam int limit,
+                                        @RequestParam String q,
+                                        @RequestParam String author,
+                                        @RequestParam String sort,
+                                        @RequestParam String order) {
+        return null;
+
     }
 }
