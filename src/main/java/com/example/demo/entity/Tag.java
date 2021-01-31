@@ -1,7 +1,6 @@
 package com.example.demo.entity;
 
 import lombok.*;
-
 import javax.persistence.*;
 import java.util.List;
 
@@ -12,14 +11,18 @@ import java.util.List;
 @Table(name = "tags")
 @NoArgsConstructor
 public class Tag {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private int id;
+
     @Setter
     @Column(name = "name")
     private String name;
+
     @ManyToMany
+    @ToString.Exclude
     private List<Article> articles;
 
     public Tag(String name) {

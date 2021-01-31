@@ -3,14 +3,11 @@ package com.example.demo.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import javax.validation.constraints.NotBlank;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TagDTO {
-    private int id;
-
-    @NotBlank(message = "name shouldn't be empty")
-    private String name;
+public class TagsCloudDTO {
+    private String tag;
+    private int postCount;
 }

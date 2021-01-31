@@ -11,9 +11,12 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TokenRepository extends JpaRepository<VerificationToken,Integer> {
+public interface TokenRepository extends
+        JpaRepository<VerificationToken,Integer> {
+
    Optional<VerificationToken> findFirstByToken(String token);
-   boolean existsByToken(String token);
+
    void removeByExpiryDateLessThan(Date date);
+
    List<VerificationToken> findAllByExpiryDateLessThan(Date date);
 }

@@ -16,6 +16,7 @@ public class ValidationFailure {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     String validationFailureHandler (MethodArgumentNotValidException ex) {
         String resultMessage="";
+
         for (ObjectError error: ex.getAllErrors()) {
             resultMessage+=error.getDefaultMessage()+"\n";
         }

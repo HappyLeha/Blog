@@ -3,19 +3,20 @@ package com.example.demo.controller;
 import com.example.demo.dto.*;
 import com.example.demo.entity.User;
 import com.example.demo.service.UserService;
-import com.example.demo.util.JwtProvider;
+import com.example.demo.jwt.JwtProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
 import javax.validation.Valid;
 
 @RestController
 @RequestMapping("auth")
 public class AuthController {
     UserService userService;
+
     @Autowired
     private JwtProvider jwtProvider;
+
     @Autowired
     public AuthController(UserService userService) {
         this.userService=userService;
@@ -50,8 +51,10 @@ public class AuthController {
     @PostMapping
     @ResponseStatus(HttpStatus.OK)
     public AuthResponse auth(@RequestBody @Valid AuthRequest request) {
-        User user = userService.getByEmailAndPassword(request.getLogin(), request.getPassword());
+        User user = userService.getByEmailAndPassword(request.getLogin(),
+                request.getPassword());
         String token = jwtProvider.generateToken(user.getEmail());
+
         return new AuthResponse(token);
     }
 }

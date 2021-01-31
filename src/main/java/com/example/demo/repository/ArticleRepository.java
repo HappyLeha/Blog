@@ -1,18 +1,26 @@
 package com.example.demo.repository;
 
 import com.example.demo.entity.Article;
-import com.example.demo.entity.ResetCode;
 import com.example.demo.entity.User;
-import com.example.demo.enumeration.Status;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
-
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ArticleRepository extends JpaRepository<Article,Integer> {
+
     List<Article> findAllByUser(User user);
-    List<Article> findAllByTitleAndUser(String title, User user, Pageable pageable);
-    List<Article> findAllByTitleAndUserAndStatus(String title, User user,
-                                                 Status status, Pageable pageable);
+
+    @Query("SELECT a FROM Article a WHERE (a.title = :title or :title is null) " +
+            "and (a.user.id = :author or :author is null)")
+    List<Article> findAllByTitleAndAuthor(@Param("title") String title,
+                                          @Param("author") Integer author,
+                                          Sort sort);
+
+    @Query("SELECT a FROM Article a WHERE (a.title = :title or :title is null) " +
+            "and (a.user.id = :author or :author is null) and a.status = 'PUBLIC'")
+    List<Article> findAllPublicByTitleAndAuthor(@Param("title") String title,
+                                                @Param("author") Integer author,
+                                                Sort sort);
 }

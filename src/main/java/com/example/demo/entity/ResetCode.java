@@ -4,7 +4,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
 import javax.persistence.*;
 import java.util.Calendar;
 import java.util.Date;
@@ -17,13 +16,17 @@ import java.util.Random;
 @Table(name = "codes")
 @NoArgsConstructor
 public class ResetCode {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @Column(name = "code")
     private String code;
+
     @Column(name = "expiry_date")
     private Date expiryDate;
+
     @OneToOne
     @JoinColumn(nullable = false, name = "user_id")
     private User user;

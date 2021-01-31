@@ -15,24 +15,15 @@ import com.example.demo.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.transaction.Transactional;
 import java.security.Principal;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 @Service
 @Transactional
@@ -42,20 +33,28 @@ public class UserServiceImpl implements UserService {
     private final TokenRepository tokenRepository;
     private final CodeRepository codeRepository;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+
     @Value("${emailAddress}")
     private String from;
+
     @Value("${emailPassword}")
     private String password;
+
     @Value("${confirmSubject}")
     private String confirmSubject;
+
     @Value("${confirmMessage}")
     private String confirmMessage;
+
     @Value("${successConfirmSubject}")
     private String successConfirmSubject;
+
     @Value("${successConfirmMessage}")
     private String successConfirmMessage;
+
     @Value("${codeSubject}")
     private String codeSubject;
+
     @Value("${codeMessage}")
     private String codeMessage;
 
@@ -95,8 +94,7 @@ public class UserServiceImpl implements UserService {
         tokenRepository.save(token);
         confirmMessage += token.getToken();
         sendEmail(confirmSubject, confirmMessage, user.getEmail());
-        //deleteExpiryTokensAndCodesAsync(Calendar.DAY_OF_MONTH, 1);
-        log.info("User "+user+" was created.");
+        log.info("User " + user + " has been created.");
     }
 
     @Override
@@ -112,7 +110,8 @@ public class UserServiceImpl implements UserService {
             tokenRepository.delete(verificationToken);
             sendEmail(successConfirmSubject, successConfirmMessage,
                     verificationToken.getUser().getEmail());
-            log.info("User "+verificationToken.getUser()+" was confirm.");
+            log.info("User " + verificationToken.getUser() +
+                    " has been confirmed.");
         }
         else {
             log.info("Token "+token+" wasn't found.");
@@ -120,13 +119,14 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
     public void createCode(String email) {
         User user;
         ResetCode code;
 
         deleteExpiryTokensAndCodes();
         if (!userRepository.existsByEmailAndEnabled(email,true)) {
-            log.info("User with email "+email+" doesn't exist.");
+            log.info("User with email " + email + " doesn't exist.");
             throw new ResourceNotFoundException(
                     "User with this email doesn't exist.");
         }
@@ -140,10 +140,10 @@ public class UserServiceImpl implements UserService {
         }
         codeMessage+=" "+user.getCode().getCode();
         sendEmail(codeSubject, codeMessage, email);
-        //deleteExpiryTokensAndCodesAsync(Calendar.MINUTE, 15);
-        log.info("Code "+user.getCode()+" was created.");
+        log.info("Code " + user.getCode() + " has been created.");
     }
 
+    @Override
     public void confirmCode(NewPasswordDTO newPasswordDTO) {
         ResetCode code;
 
@@ -157,23 +157,9 @@ public class UserServiceImpl implements UserService {
                                    newPasswordDTO.getNewPassword()));
         userRepository.save(code.getUser());
         codeRepository.delete(code);
-        log.info("Password for user "+code.getUser()+" has been successed changed.");
+        log.info("Password for user " + code.getUser() +
+                " has been successed changed.");
     }
-
-    /*@Async
-    @Transactional
-    public void deleteExpiryTokensAndCodesAsync(int measure, int value) {
-        Runnable runnable = this::deleteExpiryTokensAndCodes;
-        ScheduledExecutorService localExecutor = Executors.
-                newSingleThreadScheduledExecutor();
-        TaskScheduler scheduler = new ConcurrentTaskScheduler(localExecutor);
-        Calendar calendar = Calendar.getInstance();
-        Date date;
-
-        calendar.add(measure, value);
-        date = calendar.getTime();
-        scheduler.schedule(runnable, date);
-    }*/
 
     public void deleteExpiryTokensAndCodes() {
         List<VerificationToken> tokens = tokenRepository.
@@ -186,6 +172,7 @@ public class UserServiceImpl implements UserService {
         codeRepository.removeByExpiryDateLessThan(new Date());
     }
 
+    @Override
     public User getByEmailAndPassword(String email, String password) {
         if (!userRepository.existsByEmailAndEnabled(email, true)) {
             log.info("User with email " + email + " doesn't exist.");
@@ -210,7 +197,7 @@ public class UserServiceImpl implements UserService {
     public void updateProfile(Principal principal, UserDTO userDTO) {
         User user = userRepository.findByEmail(principal.getName());
 
-        if (!user.getEmail().equals(userDTO.getEmail())&&
+        if (!user.getEmail().equals(userDTO.getEmail()) &&
                 userRepository.existsByEmail(userDTO.getEmail())) {
             throw new ResourceAlreadyExistException();
         }
@@ -219,7 +206,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(bCryptPasswordEncoder.encode(userDTO.getPassword()));
         user.setEmail(userDTO.getEmail());
         userRepository.save(user);
-        log.info("User "+user+" was updated.");
+        log.info("User " + user + " was updated.");
     }
 
     public void deleteProfile(Principal principal) {
@@ -231,26 +218,6 @@ public class UserServiceImpl implements UserService {
         userRepository.delete(user);
         log.info("User "+user+" was deleted.");
     }
-/*
-    @Async
-    public void deleteCode(ResetCode code) {
-        Runnable runnable = ()->{
-            if (codeRepository.existsByCode(code.getCode())) {
-                codeRepository.delete(code);
-                log.info("Code "+code+" hasn't been confirmed");
-            }
-        };
-        ScheduledExecutorService localExecutor = Executors.
-                newSingleThreadScheduledExecutor();
-        TaskScheduler scheduler = new ConcurrentTaskScheduler(localExecutor);
-        Calendar calendar = Calendar.getInstance();
-        Date date;
-
-        calendar.setTime(code.getCreatedAt());
-        calendar.add(Calendar.MINUTE,15);
-        date = calendar.getTime();
-        scheduler.schedule(runnable, date);
-    }*/
 
     private void sendEmail(String subject, String message, String to)  {
         Properties props;
@@ -275,10 +242,11 @@ public class UserServiceImpl implements UserService {
             mimeMessage.setSubject(subject);
             mimeMessage.setText(message);
             Transport.send(mimeMessage);
-            log.info("Email with text "+message+" was sent to address "+to+".");
+            log.info("Email with text " + message + " was sent to address "+ to
+                    + ".");
         }
         catch (MessagingException e) {
-            log.error("Email with text "+message+"wasn't sent");
+            log.error("Email with text " + message + "wasn't sent");
             throw new UnknownServerException();
         }
     }

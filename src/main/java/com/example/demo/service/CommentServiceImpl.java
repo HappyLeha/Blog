@@ -8,12 +8,12 @@ import com.example.demo.exception.NotEnoughRightException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repository.ArticleRepository;
 import com.example.demo.repository.CommentRepository;
-import com.example.demo.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
 import javax.transaction.Transactional;
-import java.security.Principal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -21,14 +21,11 @@ import java.security.Principal;
 public class CommentServiceImpl implements CommentService {
     private CommentRepository commentRepository;
     private ArticleRepository articleRepository;
-    private UserRepository userRepository;
 
     public CommentServiceImpl(CommentRepository commentRepository,
-                              ArticleRepository articleRepository,
-                              UserRepository userRepository) {
+                              ArticleRepository articleRepository) {
         this.commentRepository = commentRepository;
         this.articleRepository = articleRepository;
-        this.userRepository = userRepository;
     }
 
     @Override
@@ -37,23 +34,23 @@ public class CommentServiceImpl implements CommentService {
         Comment comment;
 
         if (!articleRepository.existsById(commentDTO.getPostId())) {
-           log.info("Article with id "+commentDTO.getPostId()+" doesn't exist.");
+           log.info("Article with id " + commentDTO.getPostId() + " doesn't exist.");
            throw new ResourceNotFoundException("This Article doesn't exist");
         }
         article = articleRepository.findById(commentDTO.getPostId()).get();
         comment = new Comment(commentDTO.getMessage(), article, user);
         commentRepository.save(comment);
-        log.info("Comment "+comment+" was created.");
+        log.info("Comment " + comment + " has been created.");
     }
 
     @Override
     public Comment getComment(int id, int postId) {
         if (!articleRepository.existsById(postId)) {
-            log.info("Article with id "+postId+" doesn't exist.");
+            log.info("Article with id " + postId + " doesn't exist.");
             throw new ResourceNotFoundException("This Article doesn't exist");
         }
         if (!commentRepository.existsById(id)) {
-            log.info("Comment with id "+postId+" doesn't exist.");
+            log.info("Comment with id " + postId + " doesn't exist.");
             throw new ResourceNotFoundException("This Comment doesn't exist");
         }
         return commentRepository.findById(id).get();
@@ -64,7 +61,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment;
 
         if (!articleRepository.existsById(postId)) {
-            log.info("Article with id "+postId+" doesn't exist.");
+            log.info("Article with id " + postId + " doesn't exist.");
             throw new ResourceNotFoundException("This Article doesn't exist");
         }
         if (!commentRepository.existsById(id)) {
@@ -73,9 +70,25 @@ public class CommentServiceImpl implements CommentService {
         comment = commentRepository.findById(id).get();
         if (!comment.getUser().equals(user)&&!comment.getArticle().getUser().
                 equals(user)) {
-            log.info("User "+user+" can't delete "+comment);
+            log.info("User " + user + " can't delete " + comment);
             throw new NotEnoughRightException("You can't delete this article.");
         }
         commentRepository.delete(comment);
+    }
+
+    @Override
+    public List<Comment> getComments(int skip, int limit, String title,
+                                     Integer author, Sort sort) {
+        List<Comment> comments = commentRepository.findAllByTitleAndAuthor(title,
+                                                                           author,
+                                                                           sort);
+
+        if (skip!=0) {
+            comments = comments.stream().skip(skip).collect(Collectors.toList());
+        }
+        if (limit!=0) {
+            comments = comments.stream().limit(limit).collect(Collectors.toList());
+        }
+        return comments;
     }
 }

@@ -1,4 +1,4 @@
-package com.example.demo.util;
+package com.example.demo.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -7,13 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.transaction.Transactional;
 import java.util.Calendar;
 import java.util.Date;
 
 @Component
 @Slf4j
 public class JwtProvider {
+
     @Value("$(jwt.secret)")
     private String jwtSecret;
 
@@ -44,6 +44,7 @@ public class JwtProvider {
     public String getLoginFromToken(String token) {
         Claims claims = Jwts.parser().setSigningKey(jwtSecret).
                         parseClaimsJws(token).getBody();
+
         return claims.getSubject();
     }
 }

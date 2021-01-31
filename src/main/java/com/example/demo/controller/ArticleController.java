@@ -1,23 +1,29 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.ArticleDTO;
-import com.example.demo.dto.UserDTO;
+import com.example.demo.dto.TagDTO;
+import com.example.demo.dto.TagsCloudDTO;
 import com.example.demo.entity.Article;
+import com.example.demo.entity.Tag;
 import com.example.demo.entity.User;
 import com.example.demo.enumeration.Status;
 import com.example.demo.service.ArticleService;
 import com.example.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Pattern;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@Validated
 public class ArticleController {
     ArticleService articleService;
     UserService userService;
@@ -35,10 +41,14 @@ public class ArticleController {
     public void createArticle(@RequestBody @Valid ArticleDTO articleDTO,
                               Principal principal) {
         User user = userService.getProfile(principal);
+        List<Tag> tags = new ArrayList<>();
 
+        if (articleDTO.getTags() != null) {
+            tags = articleService.getTagsByNames(articleDTO.getTags());
+        }
         articleService.createArticle(new Article(articleDTO.getTitle(),
                 articleDTO.getText(), Status.valueOf(articleDTO.getStatus()),
-                user));
+                user,tags));
     }
 
     @GetMapping("/my")
@@ -48,10 +58,21 @@ public class ArticleController {
         List<ArticleDTO> articleDTOs = new ArrayList<>();
 
         List<Article> articles = articleService.getMyArticles(user);
-        articles.forEach(i->articleDTOs.add(new ArticleDTO(i.getId(),i.getTitle(),
-                i.getText(),i.getStatus().name(),i.getUser().getId(),i.getCreatedAt(),
-                i.getUpdatedAt())));
+        articles.forEach(i->{
+            List<TagDTO> tags = new ArrayList<>();
+
+            i.getTags().forEach(j->tags.add(new TagDTO(j.getId(), j.getName())));
+            articleDTOs.add(new ArticleDTO(i.getId(), i.getTitle(),
+                i.getText(), i.getStatus().name(), i.getUser().getId(),
+                    i.getCreatedAt(), i.getUpdatedAt(), tags));
+        });
         return articleDTOs;
+    }
+
+    @GetMapping("tags-cloud")
+    @ResponseStatus(HttpStatus.OK)
+    public List<TagsCloudDTO> getTagsCloud() {
+        return articleService.getTagsCloud();
     }
 
     @PutMapping("/articles/{id}")
@@ -75,13 +96,50 @@ public class ArticleController {
 
     @GetMapping("/articles")
     @ResponseStatus(HttpStatus.OK)
-    public List<ArticleDTO> getArticles(Principal principal, @RequestParam int skip,
-                                        @RequestParam int limit,
-                                        @RequestParam String q,
-                                        @RequestParam String author,
-                                        @RequestParam String sort,
-                                        @RequestParam String order) {
-        return null;
+    public List<ArticleDTO> getArticles(Principal principal,
+                                        @RequestParam(required = false) String tags,
+                                        @RequestParam(required = false,
+                                                      defaultValue = "0") @Min(0) int skip,
+                                        @RequestParam(required = false,
+                                                      defaultValue = "0") @Min(0) int limit,
+                                        @RequestParam(required = false) String q,
+                                        @RequestParam(required = false) Integer author,
+                                        @RequestParam(required = false,
+                                                      defaultValue = "id")
+                                            @Pattern(regexp = "^id$|^title$|^text$|^status$")
+                                                     String sort,
+                                        @RequestParam(required = false,
+                                                      defaultValue = "ASC")
+                                            @Pattern(regexp = "^ASC$|^DESC$")
+                                                     String order) {
+        Sort.Direction sortDirection;
+        Sort sortObject;
+        List<Article> articles;
+        List<ArticleDTO> articleDTOs = new ArrayList<>();
 
+        if (order.equals("ASC")) {
+            sortDirection = Sort.Direction.ASC;
+        }
+        else {
+            sortDirection = Sort.Direction.DESC;
+        }
+        sortObject = Sort.by(sortDirection, sort);
+        if (principal == null) {
+            articles = articleService.getArticles(tags,skip, limit, q, author,
+                    sortObject, false);
+        }
+        else {
+            articles = articleService.getArticles(tags,skip, limit, q, author,
+                    sortObject, true);
+        }
+        articles.forEach(i->{
+            List<TagDTO> tagDTOs = new ArrayList<>();
+
+            i.getTags().forEach(j->tagDTOs.add(new TagDTO(j.getId(), j.getName())));
+            articleDTOs.add(new ArticleDTO(i.getId(), i.getTitle(),
+                    i.getText(), i.getStatus().name(), i.getUser().getId(),
+                    i.getCreatedAt(), i.getUpdatedAt(), tagDTOs));
+        });
+        return articleDTOs;
     }
 }
