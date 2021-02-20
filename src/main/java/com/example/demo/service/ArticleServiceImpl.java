@@ -51,7 +51,8 @@ public class ArticleServiceImpl implements ArticleService {
         Article article;
         List<Tag> tags;
 
-        if (!articleRepository.existsById(id)) {
+        deleteUnusedTags();
+        if (!articleRepository.findById(id).isPresent()) {
             log.info("Article with id " + id + " doesn't exist.");
             throw new ResourceNotFoundException("This Article doesn't exist");
         }
@@ -67,7 +68,6 @@ public class ArticleServiceImpl implements ArticleService {
         article.setTags(tags);
         article.setUpdatedAt(new Date());
         articleRepository.save(article);
-        deleteUnusedTags();
         log.info("Article " + article + " has been updated");
     }
 
@@ -75,7 +75,7 @@ public class ArticleServiceImpl implements ArticleService {
     public void deleteArticle(int id, User user) {
         Article article;
 
-        if (!articleRepository.existsById(id)) {
+        if (!articleRepository.findById(id).isPresent()) {
             log.info("Article with id " + id + " doesn't exist.");
             return;
         }
@@ -110,8 +110,8 @@ public class ArticleServiceImpl implements ArticleService {
         if (tags != null) {
             String[] array = tags.split(",");
             List<String> listTags = Arrays.asList(array);
-            articles = articles.stream().filter(i->{
-                List<String> names = i.getTags().stream().map(Tag::getName).
+            articles = articles.stream().filter(article -> {
+                List<String> names = article.getTags().stream().map(Tag::getName).
                         collect(Collectors.toList());
                 return names.stream().anyMatch(listTags::contains);
             }).collect(Collectors.toList());
@@ -122,28 +122,23 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public List<Tag> getTagsByNames(List<TagDTO> tagDTOs) {
         List<Tag> tags = new ArrayList<>();
-        Set<Tag> tagSet;
 
-        tagDTOs.forEach(i->{
-            if (tagRepository.existsByName(i.getName())) {
-                tags.add(tagRepository.findByName(i.getName()));
+        tagDTOs.forEach(tagDTO -> {
+            if (!tagRepository.existsByName(tagDTO.getName())) {
+                tagRepository.save(new Tag(tagDTO.getName()));
             }
-            else {
-                tagRepository.save(new Tag(i.getName()));
-                tags.add(tagRepository.findByName(i.getName()));
-            }
+            tags.add(tagRepository.findByName(tagDTO.getName()));
         });
-        tagSet = new HashSet<>(tags);
-        return new ArrayList<>(tagSet);
+        return tags.stream().distinct().collect(Collectors.toList());
     }
 
     @Override
     public void deleteUnusedTags() {
         List<Tag> tags = tagRepository.findAll();
 
-        tags.forEach(i->{
-            if (i.getArticles() == null || i.getArticles().size() == 0) {
-                tagRepository.delete(i);
+        tags.forEach(tag -> {
+            if (tag.getArticles() == null || tag.getArticles().size() == 0) {
+                tagRepository.delete(tag);
             }
         });
     }
@@ -153,9 +148,8 @@ public class ArticleServiceImpl implements ArticleService {
         List<Tag> tags = tagRepository.findAll();
         List<TagsCloudDTO> tagsCloud = new ArrayList<>();
 
-        tags.forEach(i->{
-            tagsCloud.add(new TagsCloudDTO(i.getName(),i.getArticles().size()));
-        });
+        tags.forEach(tag -> tagsCloud.add(new TagsCloudDTO(tag.getName(),
+                                                           tag.getArticles().size())));
         return tagsCloud;
     }
 }

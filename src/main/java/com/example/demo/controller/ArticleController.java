@@ -25,8 +25,8 @@ import java.util.List;
 @RestController
 @Validated
 public class ArticleController {
-    ArticleService articleService;
-    UserService userService;
+    private ArticleService articleService;
+    private UserService userService;
 
     @Autowired
     public ArticleController(ArticleService articleService,
@@ -58,13 +58,15 @@ public class ArticleController {
         List<ArticleDTO> articleDTOs = new ArrayList<>();
 
         List<Article> articles = articleService.getMyArticles(user);
-        articles.forEach(i->{
+        articles.forEach(article -> {
             List<TagDTO> tags = new ArrayList<>();
 
-            i.getTags().forEach(j->tags.add(new TagDTO(j.getId(), j.getName())));
-            articleDTOs.add(new ArticleDTO(i.getId(), i.getTitle(),
-                i.getText(), i.getStatus().name(), i.getUser().getId(),
-                    i.getCreatedAt(), i.getUpdatedAt(), tags));
+            article.getTags().forEach(tag -> tags.add(new TagDTO(tag.getId(),
+                                                                 tag.getName())));
+            articleDTOs.add(new ArticleDTO(article.getId(), article.getTitle(),
+                                           article.getText(), article.getStatus().name(),
+                                           article.getUser().getId(), article.getCreatedAt(),
+                                           article.getUpdatedAt(), tags));
         });
         return articleDTOs;
     }
@@ -103,7 +105,7 @@ public class ArticleController {
                                         @RequestParam(required = false,
                                                       defaultValue = "0") @Min(0) int limit,
                                         @RequestParam(required = false) String q,
-                                        @RequestParam(required = false) Integer author,
+                                        @RequestParam(required = false) int author,
                                         @RequestParam(required = false,
                                                       defaultValue = "id")
                                             @Pattern(regexp = "^id$|^title$|^text$|^status$")
@@ -132,13 +134,17 @@ public class ArticleController {
             articles = articleService.getArticles(tags,skip, limit, q, author,
                     sortObject, true);
         }
-        articles.forEach(i->{
+        articles.forEach(article -> {
             List<TagDTO> tagDTOs = new ArrayList<>();
 
-            i.getTags().forEach(j->tagDTOs.add(new TagDTO(j.getId(), j.getName())));
-            articleDTOs.add(new ArticleDTO(i.getId(), i.getTitle(),
-                    i.getText(), i.getStatus().name(), i.getUser().getId(),
-                    i.getCreatedAt(), i.getUpdatedAt(), tagDTOs));
+            article.getTags().forEach(tag -> tagDTOs.add(new TagDTO(tag.getId(),
+                                                                    tag.getName())));
+            articleDTOs.add(new ArticleDTO(article.getId(), article.getTitle(),
+                                           article.getText(),
+                                           article.getStatus().name(),
+                                           article.getUser().getId(),
+                                           article.getCreatedAt(),
+                                           article.getUpdatedAt(), tagDTOs));
         });
         return articleDTOs;
     }

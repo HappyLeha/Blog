@@ -12,14 +12,14 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping("auth")
 public class AuthController {
-    UserService userService;
+    private UserService userService;
 
     @Autowired
     private JwtProvider jwtProvider;
 
     @Autowired
     public AuthController(UserService userService) {
-        this.userService=userService;
+        this.userService = userService;
     }
 
     @PostMapping("/register")

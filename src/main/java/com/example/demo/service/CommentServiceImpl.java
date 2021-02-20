@@ -33,7 +33,7 @@ public class CommentServiceImpl implements CommentService {
         Article article;
         Comment comment;
 
-        if (!articleRepository.existsById(commentDTO.getPostId())) {
+        if (!articleRepository.findById(commentDTO.getPostId()).isPresent()) {
            log.info("Article with id " + commentDTO.getPostId() + " doesn't exist.");
            throw new ResourceNotFoundException("This Article doesn't exist");
         }
@@ -45,11 +45,11 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Comment getComment(int id, int postId) {
-        if (!articleRepository.existsById(postId)) {
+        if (!articleRepository.findById(postId).isPresent()) {
             log.info("Article with id " + postId + " doesn't exist.");
             throw new ResourceNotFoundException("This Article doesn't exist");
         }
-        if (!commentRepository.existsById(id)) {
+        if (!commentRepository.findById(id).isPresent()) {
             log.info("Comment with id " + postId + " doesn't exist.");
             throw new ResourceNotFoundException("This Comment doesn't exist");
         }
@@ -60,11 +60,11 @@ public class CommentServiceImpl implements CommentService {
     public void deleteComment(int id, int postId, User user) {
         Comment comment;
 
-        if (!articleRepository.existsById(postId)) {
+        if (!articleRepository.findById(postId).isPresent()) {
             log.info("Article with id " + postId + " doesn't exist.");
             throw new ResourceNotFoundException("This Article doesn't exist");
         }
-        if (!commentRepository.existsById(id)) {
+        if (!commentRepository.findById(id).isPresent()) {
             return;
         }
         comment = commentRepository.findById(id).get();

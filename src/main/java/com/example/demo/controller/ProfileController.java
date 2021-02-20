@@ -12,7 +12,7 @@ import java.security.Principal;
 @RestController
 @RequestMapping("profile")
 public class ProfileController {
-    UserService userService;
+    private UserService userService;
 
     @Autowired
     public ProfileController(UserService userService) {

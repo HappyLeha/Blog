@@ -149,7 +149,7 @@ public class UserServiceImpl implements UserService {
 
         deleteExpiryTokensAndCodes();
         if (!codeRepository.existsByCode(newPasswordDTO.getCode())) {
-            log.info("Code "+newPasswordDTO.getCode()+" is wrong.");
+            log.info("Code " + newPasswordDTO.getCode() + " is wrong.");
             throw new ResourceNotFoundException("This code is wrong");
         }
         code = codeRepository.findByCode(newPasswordDTO.getCode());
@@ -166,7 +166,7 @@ public class UserServiceImpl implements UserService {
                 findAllByExpiryDateLessThan(new Date());
         List<User> users = new ArrayList<>();
 
-        tokens.forEach(i->users.add(i.getUser()));
+        tokens.forEach(i -> users.add(i.getUser()));
         tokenRepository.removeByExpiryDateLessThan(new Date());
         userRepository.deleteAll(users);
         codeRepository.removeByExpiryDateLessThan(new Date());
@@ -216,7 +216,7 @@ public class UserServiceImpl implements UserService {
             codeRepository.delete(user.getCode());
         }
         userRepository.delete(user);
-        log.info("User "+user+" was deleted.");
+        log.info("User " + user + " was deleted.");
     }
 
     private void sendEmail(String subject, String message, String to)  {
@@ -242,7 +242,7 @@ public class UserServiceImpl implements UserService {
             mimeMessage.setSubject(subject);
             mimeMessage.setText(message);
             Transport.send(mimeMessage);
-            log.info("Email with text " + message + " was sent to address "+ to
+            log.info("Email with text " + message + " was sent to address " +  to
                     + ".");
         }
         catch (MessagingException e) {

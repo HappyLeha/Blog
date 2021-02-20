@@ -54,8 +54,8 @@ public class CommentController {
     @DeleteMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteComment(@PathVariable("postId") int postId,
-                                 @PathVariable("id") int id,
-                                    Principal principal) {
+                              @PathVariable("id") int id,
+                              Principal principal) {
         User user = userService.getProfile(principal);
 
         commentService.deleteComment(id, postId, user);
@@ -68,7 +68,7 @@ public class CommentController {
                                         @RequestParam(required = false,
                                                       defaultValue = "0") @Min(0) int limit,
                                         @RequestParam(required = false) String q,
-                                        @RequestParam(required = false) Integer author,
+                                        @RequestParam(required = false) int author,
                                         @RequestParam(required = false,
                                                       defaultValue = "id")
                                                       @Pattern(regexp = "^id$|^title$|^text$|^status$")
@@ -91,11 +91,11 @@ public class CommentController {
         sortObject = Sort.by(sortDirection, sort);
         comments = commentService.getComments(skip, limit, q, author, sortObject);
 
-        comments.forEach(i->{
-            commentDTOs.add(new CommentDTO(i.getId(), i.getMessage(),
-                            i.getCreatedAt(), i.getArticle().getId(),
-                            i.getUser().getId()));
-        });
+        comments.forEach(comment -> commentDTOs.add(new CommentDTO(comment.getId(),
+                                                                   comment.getMessage(),
+                                                                   comment.getCreatedAt(),
+                                                                   comment.getArticle().getId(),
+                                                                   comment.getUser().getId())));
         return commentDTOs;
     }
 }

@@ -19,7 +19,8 @@ public interface ArticleRepository extends JpaRepository<Article,Integer> {
                                           Sort sort);
 
     @Query("SELECT a FROM Article a WHERE (a.title = :title or :title is null) " +
-            "and (a.user.id = :author or :author is null) and a.status = 'PUBLIC'")
+            "and (a.user.id = :author or :author is null) and a.status = com." +
+            "example.demo.enumeration.Status.PUBLIC")
     List<Article> findAllPublicByTitleAndAuthor(@Param("title") String title,
                                                 @Param("author") Integer author,
                                                 Sort sort);
